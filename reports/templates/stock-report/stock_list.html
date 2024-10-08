@@ -1,0 +1,94 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Stock Report
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">Item Stock List :</h1>
+
+
+<div class=" d-flex justify-content-between my-4">
+
+    <!-- Search Box --> 
+    <form  role="search" onsubmit="event.preventDefault(); searchItem();">
+        <input class="form-control me-2" id="searchInput" type="search" placeholder="Search by Item Name" aria-label="Search">
+    </form>
+   
+    <!-- filte by item name   -->
+    <div class="mt-1">
+        <label for="item">Filter by Item Name </label>
+        <select id="item" onclick="filterData()">
+            <option value="">All</option>
+            {% for stock in stock_data %}
+            <option value="{{ stock.0 }}">{{ stock.0 }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+</div>
+
+
+
+<!-- Stock Table -->
+<table class="table table-bordered table-hover border-secondary">
+    <thead class="table-primary">
+        <tr>
+            <th scope="col">S.No.</th>
+            <th scope="col">Item Name</th>
+            <th scope="col">Total Purchased</th>
+            <th scope="col">Total Sold</th>
+            <th scope="col">Available Stock</th>
+        </tr>
+    </thead>
+    <tbody class="table-group-divider" id="stockTableBody">
+        {% for stock in stock_data %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ stock.0 }}</td>
+            <td>{{ stock.1 }}</td>
+            <td>{{ stock.2 }}</td>
+            <td>{{ stock.3 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">No Items Available</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    function filterData() {
+        const itemName = document.getElementById('item').value;
+        const tableRows = document.querySelectorAll('#stockTableBody tr');
+        
+        tableRows.forEach(row => {
+            const itemCell = row.children[1].textContent.trim();
+            
+            if (itemName === '' || itemCell === itemName) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function searchItem() {
+        const searchInput = document.getElementById('searchInput').value.toLowerCase();
+        const tableRows = document.querySelectorAll('#stockTableBody tr');
+
+        if(searchInput!==""){
+            tableRows.forEach(row => {
+                const itemCell = row.children[1].textContent.toLowerCase();
+                if (itemCell.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    }
+</script>
+
+{% endblock %}

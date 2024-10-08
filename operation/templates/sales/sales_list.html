@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block title %}
+sale
+{% endblock title %}
+
+{% block content %}
+<h1>Sale List</h1>
+
+<a href="{% url 'sales_master' %}">
+    <button type="button" class="mb-3 btn btn-outline-secondary">Sale Items</button>
+</a>
+
+<table class="table table-bordered table-hover border-secondary " >
+    <thead class="table-primary">
+        <tr>
+            <th scope="col">S.No.</th>
+            <th scope="col">Invoice No.</th>
+            <th scope="col">Invoice Date</th>
+            <th scope="col">Total Amount</th>
+            <th scope="col">Customer Name</th>
+            <th scope="col">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="table-group-divider" >
+        {% for sale in sales %}
+        <tr >
+            <td>{{ forloop.counter }}</td> <!-- Automatically increment serial number -->
+            <td>{{ sale.invoice_no }}</td> <!-- Invoice number from the database -->
+            <td>{{ sale.invoice_date|date:"d-m-Y" }}</td> <!-- Invoice date from the database -->
+            <td>₹ {{ sale.total_amount }}</td> <!-- Total amount from the database -->
+            <td>{{ sale.customer_id.supplier_name }}</td> <!-- Supplier name using foreign key relationship -->
+            <td>
+                <a href="{% url 'sales_details_view' sale.id %}">
+                    <button class="btn btn-success btn-sm">View</button>
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No Sales found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock content %}

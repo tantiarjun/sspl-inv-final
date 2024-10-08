@@ -1,0 +1,50 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    sale details
+{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Sale Details for Invoice: {{ sale_master.invoice_no }}</h3>
+
+<p>
+    <strong>Customer Details :</strong> {{ sale_master.customer_id.supplier_name }} , Phone.No -{{sale_master.customer_id.phone_no}} , Address :- {{sale_master.customer_id.address}}
+</p>
+<p><strong>Total Amount :</strong> {{ sale_master.total_amount }}</p>
+<p><strong>Invoice Date :</strong> {{ sale_master.invoice_date|date:"d-m-Y" }}</p>
+
+<table class="table table-bordered table-hover border-secondary">
+    <thead class="table-primary">
+        <tr>
+            <th scope="col">S.No.</th>
+            <th scope="col">Item Name</th>
+            <th scope="col">Price</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Amount</th>
+        </tr>
+    </thead>
+    <tbody class="table-group-divider">
+        {% for detail in sale_details %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ detail.item_id.item_name }}</td> <!-- Item name from foreign key -->
+            <td>₹ {{ detail.price }}</td>
+            <td>{{ detail.quantity }}</td>
+            <td>₹ {{ detail.amount }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No items found for this Sale.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'sales_list' %}">
+    <button class="btn btn-secondary">Back to Sale List</button>
+</a>
+
+
+
+
+{% endblock %}

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Master</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        
+        form{
+            padding:50px;
+        } 
+        .form-row {
+            display: flex;
+            margin-bottom: 40px;
+        }
+        .form-row div {
+            display:flex;
+            flex-direction:column;
+            margin-right:20px ;
+        }
+        .form-row div label{
+            font-weight:bold;
+            margin-left:3px;
+        }
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 8px;
+        }
+        {% comment %} table {
+            margin-top: 20px;
+            width: 100%;
+        } {% endcomment %}
+
+        .supplier_details{
+            display:flex;
+        }
+    </style>
+</head>
+<body style="background-color: rgb(238, 242, 245);">
+
+    <nav class="px-4 navbar navbar-expand-lg bg-dark border-bottom border-body" data-bs-theme="dark">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="{% url 'item_action'%}">Inventory Management</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse " id="navbarNavAltMarkup">
+            <div class="navbar-nav ms-auto">
+              <a class="nav-link active pe-5 text-white"  href="{% url 'item_action' %}">Item</a>  
+              <a class="nav-link pe-5 text-white" href="{% url 'supplier_list' %}">Supplier</a>
+              <a class="nav-link pe-5 text-white" href="{% url 'purchase_list' %}">Purchase</a>
+              <a class="nav-link pe-5 text-white" href="{%  url 'sales_list'%}">Sale</a>
+              <a class="nav-link pe-5 text-white" href="{% url 'stock_list' %}">Stock Report</a>
+              <a class="nav-link pe-5 text-white" href="{% url 'detailed_report' %}">Purchase Report</a>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+<h1  style="padding:20px 0px 0px 50px;">Sales Master</h1>
+
+<form id="purchaseForm" method="POST" action="">
+    {% csrf_token %}
+
+    <!-- First row: Invoice No, Date, Supplier Name -->
+    <div class="form-row">
+        <div>
+            <label for="invoice">Invoice No.</label>
+            <input type="text" id="invoice" name="invoice_no" readonly>
+        </div>
+
+        <div>
+            <label for="date">Invoice Date</label>
+            <input type="date" id="date" name="invoice_date" required>
+        </div>
+
+        <div>
+            <label for="supplier_name">Customer Name</label>
+            <select name="supplier_id" id="supplier_name" required onchange="fetchSupplierDetails()">
+                <option value="">Select Customer</option>
+                {% for supplier in suppliers %}
+                <option value="{{ supplier.id }}" >{{ supplier.supplier_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="supplier_details">
+            <label for="supplier_details">Customer Details</label>
+            
+            <textarea class="p-1"  style="margin-left:5px;" id="supplier_details" readonly></textarea>
+        </div>
+    </div>
+
+    <!-- Second row: Item Name, Rate, Quantity, Total, Add Button -->
+    <div class="form-row">
+        <div>
+            <label for="item_name">Item Name</label>
+            <select name="item_name" id="item_name" required onchange="fetchRate()">
+                <option value="">Select Item</option>
+                {% for item in items %}
+                <option value="{{ item.id }}">{{ item.item_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="rate">Price</label>
+            <input type="text" id="rate" readonly>
+        </div>
+
+        <div>
+            <label for="available_stock">Available Quantity</label>
+            <input class="bg-success-subtle text-success bg-opacity-10 border border-success fw-bold" type="text" id="available_stock" readonly>
+        </div>
+
+        <div>
+            <label for="quantity">Quantity</label>
+            <input type="number" id="quantity" min="0" required oninput="calculateTotal()">
+        </div>
+
+        <div>
+            <label for="total">Total</label>
+            <input type="text" id="total" readonly>
+        </div>
+
+        <div style="align-self: center;">
+            <button class="btn btn-primary  btn-sm mt-3" type="button" onclick="addItem()">Add Item</button>
+        </div>
+    </div>
+
+    <!-- Table to display added items -->
+    <table id="itemTable">
+        <thead>
+            <tr>
+                <th>Sl. No.</th>
+                <th>Item Name</th>
+                <th>Rate</th>
+                <th>Quantity</th>
+                <th>Total</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+   <div class="mt-3">
+    <label for="sub_total"> <strong>Sub Total</strong></label>
+    <input type="text" readonly id="sub_total">
+   </div>
+
+    <!-- Final Submit Button -->
+    <div style="margin-top: 20px;">
+        <button  class="btn btn-success" type="submit" onclick="validateItems(event)"> Submit</button>
+    </div>
+</form>
+
+<script>
+    // Generate a unique invoice number
+    function generateInvoiceNumber() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        return `INV-${year}${month}${day}-${hours}${minutes}${seconds}`;
+    }
+
+    // Set the generated invoice number on page load
+    window.onload = function() {
+        document.getElementById("invoice").value = generateInvoiceNumber();
+
+        const currentDate = new Date();
+        // Get current date in YYYY-MM-DD format
+        const formattedCurrentDate = currentDate.toISOString().split('T')[0];
+        document.getElementById('date').value = formattedCurrentDate;
+    };
+    
+    function fetchSupplierDetails() {
+        var supplierId = document.getElementById('supplier_name').value;
+        
+        if (supplierId) {
+            // Make an AJAX GET request to fetch supplier details
+            fetch(`/get-supplier-details/?supplier_id=${supplierId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the supplier details input field with fetched data
+                    document.getElementById('supplier_details').value = `Address: ${data.supplier_details.address}, Phone: ${data.supplier_details.phone}`;
+                } else {
+                    document.getElementById('supplier_details').value = "Supplier details not found";
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching supplier details:', error);
+                document.getElementById('supplier_details').value = "Error fetching details";
+            });
+        } else {
+            document.getElementById('supplier_details').value = ""; // Clear details if no supplier is selected
+        }
+    }
+    
+
+    let itemCount = 0;
+    let items = [];
+    let subTotal = 0;
+    let availableStock = 0; // This will store the stock for the selected item
+
+    // Fetch item rate via AJAX
+    function fetchRate() {
+        const item_id = $('#item_name').val();
+        
+        if (item_id) {
+            $.get('/get-item-rate/', { item_name_id: item_id }, function(data) {
+                $('#rate').val(data.rate);
+                calculateTotal();
+            });
+            
+            // Fetch available stock
+            $.get('/get-available-stock/', { item_id: item_id }, function(data) {
+                if (data.available_stock !== undefined) {
+                    availableStock = data.available_stock ;
+                    $('#available_stock').val(availableStock);
+                } else {
+                    $('#available_stock').val('Not available');
+                    availableStock = 0;
+                }
+            });
+        } else {
+            $('#rate').val('');
+            $('#total').val('');
+            $('#available_stock').val('');
+            availableStock = 0;
+        }
+
+    }
+
+    // Calculate total amount based on rate and quantity
+    // Validate quantity and show error if it exceeds available stock
+    function calculateTotal() {
+        const rate = parseFloat($('#rate').val()) || 0;
+        const quantity = parseInt($('#quantity').val()) || 0;
+        
+        if (quantity<0){
+            document.getElementById("quantity").value= quantity*(-1);
+            const total = rate * quantity*-1;
+            $('#total').val(total.toFixed(2));
+        }
+        else if (quantity > availableStock) {
+            $('#quantity').addClass('is-invalid');
+            $('#quantity').after('<div class="invalid-feedback">Quantity exceeds available stock!</div>');
+            $('#total').val('');
+        } else {
+            $('#quantity').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+            const total = rate * quantity;
+            $('#total').val(total.toFixed(2));
+        }
+    }
+
+
+    // Add item to the table and hidden input for form submission
+    function addItem() {
+        const item_id = $('#item_name').val();
+        const item_name = $('#item_name option:selected').text();
+        const rate = parseFloat($('#rate').val());
+        const quantity = parseFloat($('#quantity').val());
+        const total = parseFloat($('#total').val());
+
+        if (item_id && rate && quantity && total) {
+            // Check if the item already exists in the table
+            let itemExists = false;
+
+            $('#itemTable tbody tr').each(function() {
+                const current_item_name = $(this).find('td:nth-child(2)').text();
+
+                if (current_item_name === item_name) {
+                    // Item already exists, increase the quantity and update the total
+                    let current_quantity = parseFloat($(this).find('td:nth-child(4)').text());
+                    let new_quantity = current_quantity + quantity;
+                    let new_total = new_quantity * rate;
+
+                    // Update the quantity and total in the table row
+                    $(this).find('td:nth-child(4)').text(new_quantity);
+                    $(this).find('td:nth-child(5)').text(new_total.toFixed(2));
+
+                    // Update the hidden input value (which is used for form submission)
+                    const hiddenInput = $(`input[id^='item_']`).filter(function() {
+                        return $(this).val().startsWith(item_id);
+                    });
+                    const updatedValue = `${item_id},${new_quantity},${new_total.toFixed(2)}`;
+                    hiddenInput.val(updatedValue);
+
+                    // Update the subtotal
+                    subTotal += total; // Add the total of the added quantity to subtotal
+                    $('#sub_total').val(subTotal.toFixed(2));
+
+                    itemExists = true;
+                }
+            });
+
+            // If the item doesn't exist, add a new row and hidden input
+            if (!itemExists) {
+                itemCount++;
+
+                // Append new row to the table
+                const row = `<tr>
+                    <td>${itemCount}</td>
+                    <td>${item_name}</td>
+                    <td>${rate}</td>
+                    <td>${quantity}</td>
+                    <td>${total.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" type="button" 
+                            onclick="removeItem(this, ${itemCount - 1}, ${total})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+                $('#itemTable tbody').append(row);
+
+                // Append hidden input for form submission
+                $('form').append(`<input type="hidden" name="items[]" value="${item_id},${quantity},${total.toFixed(2)}" id="item_${itemCount}">`);
+
+                // Update the subtotal
+                subTotal += total;
+                $('#sub_total').val(subTotal.toFixed(2));
+            }
+
+            // Clear the input fields
+            $('#item_name').val('');
+            $('#rate').val('');
+            $('#quantity').val('');
+            $('#total').val('');
+            $('#available_stock').val('');
+        } else {
+            alert("Please fill out all the fields for the item.");
+        }
+    }
+
+
+    // Remove item from the table and hidden input
+    function removeItem(button, index,total) {
+        $(button).closest('tr').remove();
+        $(`#item_${index + 1}`).remove();
+        subTotal -= parseFloat(total);
+        $('#sub_total').val(subTotal.toFixed(2));
+    }
+
+    
+
+    // Validate if any items are added before submitting the form
+    function validateItems(event) {
+        const itemCount = $('#itemTable tbody tr').length;
+        if (itemCount === 0) {
+            event.preventDefault(); // Prevent form submission
+            alert("Please add at least one item before submitting.");
+        } else {
+            // Remove required validation from item input fields before final submission
+            $('#item_name').removeAttr('required');
+            $('#quantity').removeAttr('required');
+        }
+    }
+</script>
+
+</body>
+</html>

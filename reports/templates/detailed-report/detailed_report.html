@@ -1,0 +1,123 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Detailed Report
+{% endblock %}
+
+{% block content %}
+
+<h1 class="mb-3 text-3xl">Detailed List :</h1>
+
+<div class="d-flex my-4 gap-5">
+    <div class="d-flex flex-column">
+        <strong><label for="from_date">From Date:</label></strong>
+        <input id="from_date" type="date">
+    </div>
+
+    <div class="d-flex flex-column">
+        <strong><label for="to_date">To Date:</label></strong>
+        <input id="to_date" type="date">
+    </div>
+
+    <div class="d-flex flex-column">
+        <strong><label for="item">Item</label></strong>
+        <select id="item">
+            <option value="">All</option>
+            {% for item in items %}
+            <option value="{{ item.item_name }}">{{ item.item_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="d-flex flex-column" title="Change the type to apply the filter.">
+        <strong><label for="report_type">Select Type</label></strong>
+        <select id="report_type" onchange="changeType(this.value)">
+            <option value="purchase">Purchase</option>
+            <option value="sales">Sales</option>
+        </select>
+    </div>
+
+    <div class="mt-1">
+        <button class="btn btn-primary btn-sm mt-3" onclick="filterData()">Search</button>
+    </div>
+</div>
+
+<!-- Detail Table -->
+<table class="table table-bordered table-hover border-secondary">
+    <thead class="table-primary">
+        <tr>
+            <th scope="col">S.No.</th>
+            <th scope="col">Item Name</th>
+            <th scope="col">Item Price</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Total Price</th>
+            <th scope="col">Date</th>
+            <th scope="col" id="supplier_customer">Supplier</th>
+        </tr>
+    </thead>
+    <tbody class="table-group-divider" id="stockTableBody">
+        <!-- Data to be filled via AJAX -->
+        <tr>
+            <td colspan="6">No Data Available</td>
+        </tr>
+    </tbody>
+</table>
+
+<script>
+    let selectedType = 'purchase';
+
+    // Change type function to adjust column header and trigger filter
+    function changeType(type) {
+        selectedType = type;
+        document.getElementById('supplier_customer').textContent = (selectedType === "sales") ? "Customer" : "Supplier";
+    }
+
+    // Function to fetch data based on filters
+    function filterData() {
+        const item = document.getElementById('item').value;
+        const fromDate = document.getElementById('from_date').value;
+        const toDate = document.getElementById('to_date').value;
+
+        // Build the URL with query parameters
+        const url = `/detailed-report/?type=${encodeURIComponent(selectedType)}&item=${encodeURIComponent(item)}&fromdate=${encodeURIComponent(fromDate)}&todate=${encodeURIComponent(toDate)}`;
+
+        // Perform AJAX request
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.getElementById('stockTableBody');
+            tableBody.innerHTML = ''; // Clear previous table data
+
+            if (data.stock_data && data.stock_data.length > 0) {
+                data.stock_data.forEach((stock, index) => {
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${stock.item_name}</td>
+                            <td>${stock.item_price}</td>
+                            <td>${stock.quantity}</td>
+                            <td>${stock.total_price}</td>
+                            <td>${stock.datetime}</td>
+                            <td>${stock.supplier_or_customer}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="7">No Items Available</td></tr>';
+            }
+        })
+        .catch(error => console.error('Error fetching data:', error));
+    }
+
+    // Trigger the data load on initial page load
+    window.onload = function() {
+        filterData();
+    };
+</script>
+
+{% endblock %}
